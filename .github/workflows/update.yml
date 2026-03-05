@@ -1,0 +1,37 @@
+name: Update AltStore Repo
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Fetch latest release
+        id: release
+        run: |
+          RELEASE=$(curl -s https://api.github.com/repos/diarrhea3/YTLiteDiarrhea/releases/latest)
+          # Versione dal nome della release (es. "21.09.2 YouTubePlus v5.2b4")
+          echo "version=$(echo $RELEASE | jq -r '.name')" >> $GITHUB_OUTPUT
+          # URL del file .ipa
+          echo "url=$(echo $RELEASE | jq -r '.assets[] | select(.name | endswith(".ipa")) | .browser_download_url')" >> $GITHUB_OUTPUT
+          # Data di pubblicazione
+          echo "date=$(echo $RELEASE | jq -r '.published_at | split("T")[0]')" >> $GITHUB_OUTPUT
+
+      - name: Update apps.json
+        run: |
+          jq --arg v "${{ steps.release.outputs.version }}" \
+             --arg u "${{ steps.release.outputs.url }}" \
+             --arg d "${{ steps.release.outputs.date }}" \
+             '.apps[0].version = $v | .apps[0].downloadURL = $u | .apps[0].versionDate = $d' \
+             apps.json > tmp.json && mv tmp.json apps.json
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git diff --quiet || (git add apps.json && git commit -m "Update to ${{ steps.release.outputs.version }}" && git push)
