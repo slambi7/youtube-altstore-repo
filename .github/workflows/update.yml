@@ -16,7 +16,7 @@ jobs:
         run: |
           RELEASE=$(curl -s https://api.github.com/repos/diarrhea3/YTLiteDiarrhea/releases/latest)
           # Versione dal nome della release (es. "21.09.2 YouTubePlus v5.2b4")
-          echo "version=$(echo $RELEASE | jq -r '.name')" >> $GITHUB_OUTPUT
+          echo "version=$(echo $RELEASE | jq -r '.name' | awk '{print $1}')" >> $GITHUB_OUTPUT
           # URL del file .ipa
           echo "url=$(echo $RELEASE | jq -r '.assets[] | select(.name | endswith(".ipa")) | .browser_download_url')" >> $GITHUB_OUTPUT
           # Data di pubblicazione
